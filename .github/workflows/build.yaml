@@ -1,0 +1,55 @@
+# Copyright 2023 Paul Guyot <pguyot@kallisys.net>
+# SPDX-License-Identifier: Apache-2.0 OR LGPL-2.1-or-later
+
+name: "Build"
+
+on: ["push", "pull_request"]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    container: erlang:26
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Install erlfmt
+        run: |
+          cd ..
+          git clone --depth 1 -b v1.1.0 https://github.com/WhatsApp/erlfmt.git
+          cd erlfmt
+          rebar3 as release escriptize
+      - name: Run erlfmt
+        run: |
+          find . -name *.erl | xargs ../erlfmt/_build/release/bin/erlfmt -c
+  build_and_run:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        otp: ["21", "26"]
+    container: erlang:${{ matrix.otp }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Compile
+        run: |
+          rebar3 compile
+      - name: Escriptize
+        run: |
+          rebar3 escriptize
+      - name: Generate avm package
+        run: |
+          rebar3 packbeam
+      - name: Ensure tests run properly
+        run: |
+          _build/default/bin/benchmark
+      - name: Upload AVM package
+        uses: actions/upload-artifact@v3
+        with:
+          name: avm-compiled-with-otp-${{ matrix.otp }}
+          path: _build/default/lib/benchmark.avm
+      - name: Upload escript
+        uses: actions/upload-artifact@v3
+        with:
+          name: escript-compiled-with-otp-${{ matrix.otp }}
+          path: _build/default/bin/benchmark
