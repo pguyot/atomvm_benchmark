@@ -25,11 +25,12 @@ lcg(Uniform) ->
 
 run() ->
     erase(rand_state),
-    _ = lists:foldl(
-        fun(_Ix, _Acc) ->
-            lcg(9)
-        end,
-        0,
-        lists:seq(1, 10000)
-    ),
+    6 = loop(10000),
     erase(rand_state).
+
+loop(N) ->
+    Val = lcg(9),
+    case N of
+        1 -> Val;
+        _ -> loop(N - 1)
+    end.
