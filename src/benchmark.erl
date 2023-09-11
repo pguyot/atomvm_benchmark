@@ -15,6 +15,7 @@ start() ->
     run(TimeFunc, pingpong_speed_test),
     run(TimeFunc, prime_speed_test),
     run(TimeFunc, prng_test),
+    run(TimeFunc, pi_test),
     case erlang:function_exported(lists, usort, 1) of
         true ->
             run(TimeFunc, sudoku_solution_test),
