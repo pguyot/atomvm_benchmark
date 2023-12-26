@@ -10,6 +10,19 @@ main(_) ->
     start().
 
 start() ->
+    try atomvm:platform() of
+        esp32 ->
+            try esp:task_wdt_reconfigure({5000, 0, false}) of
+                ok ->
+                    io:format("Reconfigured esp32 watchdog timer\n");
+                {error, noproc} ->
+                    io:format("ESP32 watchdog timer is not running\n")
+            catch error:undef ->
+                io:format("ESP32 watchdog timer is not enabled or watchdog timer support is not available with this AtomVM version\n")
+            end;
+        _Other -> ok
+    catch error:undef -> ok
+    end,
     io:format("Running tests:\n"),
     TimeFunc = get_time_func(),
     run(TimeFunc, pingpong_speed_test),
