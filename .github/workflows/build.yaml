@@ -11,7 +11,7 @@ jobs:
     container: erlang:26
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Install erlfmt
         run: |
           cd ..
@@ -30,7 +30,7 @@ jobs:
     container: erlang:${{ matrix.otp }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Compile
         run: |
           rebar3 compile
@@ -44,12 +44,12 @@ jobs:
         run: |
           _build/default/bin/benchmark
       - name: Upload AVM package
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: avm-compiled-with-otp-${{ matrix.otp }}
           path: _build/default/lib/benchmark.avm
       - name: Upload escript
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: escript-compiled-with-otp-${{ matrix.otp }}
           path: _build/default/bin/benchmark
