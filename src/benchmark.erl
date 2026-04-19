@@ -3,7 +3,10 @@
 
 -module(benchmark).
 
--export([start/0, main/1]).
+-export([start/0, main/1, exports/0]).
+
+exports() ->
+    code_server:module_info().
 
 % Entry point for escriptize
 main(_) ->
@@ -41,18 +44,27 @@ start() ->
         "BEAM" ->
             io:format("Machine: BEAM\n")
     end,
+    print_jit_status(),
     io:format("Running tests:\n"),
     TimeFunc = get_time_func(),
     run(TimeFunc, pingpong_speed_test),
     run(TimeFunc, prime_speed_test),
     run(TimeFunc, prng_test),
     run(TimeFunc, pi_test),
+    run(TimeFunc, bigint_test),
     case erlang:function_exported(lists, usort, 1) of
         true ->
             run(TimeFunc, sudoku_solution_test),
             run(TimeFunc, sudoku_puzzle_test);
         false ->
             io:format("Cannot run sudoku tests as this version of AtomVM is missing functions\n")
+    end,
+    case erlang:function_exported(crypto, hash, 2) of
+        true ->
+            run(TimeFunc, crypto_test),
+            run(TimeFunc, crypto_bulk_test);
+        false ->
+            io:format("Cannot run crypto tests as crypto module is not available\n")
     end,
     try erlang:system_info(schedulers) of
         N when is_integer(N) andalso N > 1 ->
@@ -67,6 +79,15 @@ start() ->
         _:_ -> ok
     end,
     ok.
+
+print_jit_status() ->
+    try erlang:system_info(emu_flavor) of
+        jit -> io:format("JIT: enabled\n");
+        emu -> io:format("JIT: disabled\n");
+        _ -> ok
+    catch
+        _:_ -> ok
+    end.
 
 run(TimeFunc, TestModule) ->
     run(TimeFunc, TestModule, []).
