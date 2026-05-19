@@ -2,19 +2,30 @@
 % SPDX-License-Identifier: Apache-2.0 OR LGPL-2.1-or-later
 
 -module(bigint_test).
+
 -export([run/0]).
 
-% Exercises bigint arithmetic via modular exponentiation.
-% Uses Mersenne prime 2^127-1; verifies Fermat's little theorem: a^(p-1) ≡ 1 (mod p).
-run() ->
-    P = 170141183460469231731687303715884105727,
-    pow_mod_loop([2, 3, 5, 7, 11, 13, 17, 19, 23, 29], P).
+% AtomVM caps integers at 256 bits (signed magnitude). To keep Base*Base below
+% that limit, the modulus is the 127-bit Mersenne prime 2^127 - 1; intermediate
+% squarings stay under 254 bits.
 
-pow_mod_loop([], _P) ->
+% Mersenne prime: 2^127 - 1
+-define(P127, 16#7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF).
+
+run() ->
+    iteration(40).
+
+iteration(0) ->
     ok;
-pow_mod_loop([Base | Rest], P) ->
-    1 = pow_mod(Base, P - 1, P),
-    pow_mod_loop(Rest, P).
+iteration(N) ->
+    P = ?P127,
+    % Fermat's little theorem: g^(p-1) mod p = 1 for g coprime to p
+    1 = pow_mod(7, P - 1, P),
+    1 = pow_mod(13, P - 1, P),
+    % 2^128 mod (2^127 - 1) = 2
+    2 = pow_mod(2, 128, P),
+    10810968933129975378600013865352026249 = pow_mod(3, 200, P),
+    iteration(N - 1).
 
 pow_mod(_Base, 0, _Mod) ->
     1;
@@ -27,7 +38,7 @@ pow_mod_iter(_Base, 0, _Mod, Acc) ->
 pow_mod_iter(Base, Exp, Mod, Acc) ->
     NewAcc =
         case Exp band 1 of
-            1 -> Base * Acc rem Mod;
+            1 -> (Acc * Base) rem Mod;
             0 -> Acc
         end,
-    pow_mod_iter(Base * Base rem Mod, Exp bsr 1, Mod, NewAcc).
+    pow_mod_iter((Base * Base) rem Mod, Exp bsr 1, Mod, NewAcc).
