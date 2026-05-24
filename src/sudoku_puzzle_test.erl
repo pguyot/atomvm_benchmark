@@ -6,11 +6,6 @@
 -export([run/0]).
 
 run() ->
-    SpawnOpts =
-        case erlang:system_info(machine) of
-            "BEAM" -> [];
-            "ATOM" -> [{heap_growth, fibonacci}]
-        end,
     {Pid, Ref} = spawn_opt(
         fun() ->
             {Hints, Puzzle} = sudoku_grid:random_puzzle(fun prng_test:lcg/1),
@@ -18,7 +13,7 @@ run() ->
             0 = sudoku_grid:get(1, 1, Puzzle),
             4 = sudoku_grid:get(1, 2, Puzzle)
         end,
-        [link, monitor | SpawnOpts]
+        [link, monitor | benchmark:spawn_opts()]
     ),
     receive
         {'DOWN', Ref, process, Pid, normal} -> ok
