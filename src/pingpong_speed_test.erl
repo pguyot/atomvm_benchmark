@@ -11,8 +11,9 @@ run() ->
 iteration(0) ->
     ok;
 iteration(N) ->
-    Pid1 = spawn(fun ping_pong/0),
-    Pid2 = spawn(fun ping_pong/0),
+    Opts = benchmark:spawn_opts(),
+    Pid1 = spawn_opt(fun ping_pong/0, Opts),
+    Pid2 = spawn_opt(fun ping_pong/0, Opts),
     Pid1 ! {peer, Pid2},
     Pid2 ! {peer, Pid1},
     Pid1 ! {self(), start},

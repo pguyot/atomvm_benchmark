@@ -3,10 +3,14 @@
 
 -module(benchmark).
 
--export([start/0, main/1, exports/0]).
+-export([start/0, main/1, exports/0, spawn_opts/0]).
 
 exports() ->
     code_server:module_info().
+
+%% BEAM's default per-process minimum heap, in words. Set explicitly on both
+%% VMs so the comparison uses the same minimum heap.
+-define(MIN_HEAP_SIZE, 233).
 
 % Entry point for escriptize
 main(_) ->
@@ -95,10 +99,38 @@ run(TimeFunc, TestModule) ->
 run(TimeFunc, TestModule, Suffix) ->
     io:format("~s~s: ", [TestModule, Suffix]),
     Start = TimeFunc(),
-    TestModule:run(),
+    % Run each test in its own process so that, on AtomVM, it uses the same
+    % heap growth strategy and minimum heap size as BEAM would (see
+    % spawn_opts/0). On BEAM this is simply the default.
+    {_Pid, Ref} = spawn_opt(
+        fun() -> TestModule:run() end,
+        [monitor | spawn_opts()]
+    ),
+    receive
+        {'DOWN', Ref, process, _, normal} ->
+            ok;
+        {'DOWN', Ref, process, _, Reason} ->
+            io:format("FAILED (~p) ", [Reason])
+    end,
     End = TimeFunc(),
     Delta = End - Start,
     io:format("~p\n", [Delta]).
+
+%% @doc Spawn options that make an AtomVM process behave like a BEAM process
+%% with respect to garbage collection: BEAM grows the heap following a
+%% fibonacci series and starts processes with a 233-word minimum heap. AtomVM
+%% defaults to the bounded-free strategy with no minimum, which collects far
+%% more aggressively.
+%%
+%% min_heap_size is a standard option on both VMs and is set explicitly on both
+%% so the comparison uses the same minimum heap (233 is also BEAM's default, so
+%% it does not change BEAM behaviour, but keeps the two configurations aligned).
+%% atomvm_heap_growth is AtomVM-specific and only set there.
+spawn_opts() ->
+    case erlang:system_info(machine) of
+        "ATOM" -> [{atomvm_heap_growth, fibonacci}, {min_heap_size, ?MIN_HEAP_SIZE}];
+        _ -> [{min_heap_size, ?MIN_HEAP_SIZE}]
+    end.
 
 % Old versions of AtomVM didn't have microsecond
 get_time_func() ->

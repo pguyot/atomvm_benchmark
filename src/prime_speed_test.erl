@@ -11,10 +11,11 @@ run() ->
 iteration(0) ->
     ok;
 iteration(N) ->
-    Pid1 = spawn(fun calculate_primes/0),
-    Pid2 = spawn(fun calculate_primes/0),
-    Pid3 = spawn(fun calculate_primes/0),
-    Pid4 = spawn(fun calculate_primes/0),
+    Opts = benchmark:spawn_opts(),
+    Pid1 = spawn_opt(fun calculate_primes/0, Opts),
+    Pid2 = spawn_opt(fun calculate_primes/0, Opts),
+    Pid3 = spawn_opt(fun calculate_primes/0, Opts),
+    Pid4 = spawn_opt(fun calculate_primes/0, Opts),
     Pid1 ! {self(), go},
     Pid2 ! {self(), go},
     Pid3 ! {self(), go},
