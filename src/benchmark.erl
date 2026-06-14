@@ -70,6 +70,9 @@ start() ->
         false ->
             io:format("Cannot run crypto tests as crypto module is not available\n")
     end,
+    run(TimeFunc, list_test),
+    run(TimeFunc, map_test),
+    run(TimeFunc, binary_test),
     try erlang:system_info(schedulers) of
         N when is_integer(N) andalso N > 1 ->
             Schedulers = erlang:system_flag(schedulers_online, 1),
